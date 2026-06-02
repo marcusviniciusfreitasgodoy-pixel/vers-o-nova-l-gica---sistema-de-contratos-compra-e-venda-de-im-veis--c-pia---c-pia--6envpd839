@@ -1,7 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useAuth } from '@/hooks/use-auth'
 import { Navigate, Link, useNavigate, useLocation } from 'react-router-dom'
-import pb from '@/lib/pocketbase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -14,31 +13,14 @@ export default function Login() {
   const [email, setEmail] = useState('marcus@godoyprime.com.br')
   const [password, setPassword] = useState('Skip@Pass')
   const [isLoading, setIsLoading] = useState(false)
-  const [branding, setBranding] = useState<{ logo?: string; name: string }>({
+  const branding = {
     name: 'GPR - Gerador de Contratos',
-  })
+    logo: defaultLogoUrl,
+  }
   const navigate = useNavigate()
   const location = useLocation()
 
   const from = location.state?.from?.pathname || '/dashboard'
-
-  useEffect(() => {
-    async function fetchBranding() {
-      if (!pb.authStore.isValid) return
-      try {
-        const company = await pb
-          .collection('companies')
-          .getFirstListItem('name = "Godoy Prime Realty"', { requestKey: null })
-        if (company) {
-          setBranding({ name: company.name })
-        }
-      } catch (err) {
-        // Gracefully fallback on 404 missing resource without crashing
-        console.warn('Configuração de branding não encontrada. Usando valores padrão.')
-      }
-    }
-    fetchBranding()
-  }, [])
 
   if (user && !loading && !isLoading) {
     return <Navigate to={from} replace />
@@ -67,7 +49,7 @@ export default function Login() {
       <Card className="w-full max-w-md shadow-2xl border-0 bg-white/5 backdrop-blur-md text-white mx-auto">
         <CardHeader className="text-center pb-8 pt-8 px-4 sm:px-8">
           <div className="mx-auto mb-8 flex justify-center">
-            <img src={branding.logo || defaultLogoUrl} alt="Logo" className="h-16 object-contain" />
+            <img src={branding.logo} alt="Logo" className="h-16 object-contain" />
           </div>
           <CardTitle className="text-2xl text-white font-display font-medium tracking-wide">
             {branding.name}
