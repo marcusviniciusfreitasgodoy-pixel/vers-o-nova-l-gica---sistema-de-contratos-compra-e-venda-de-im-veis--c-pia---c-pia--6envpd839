@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '@/hooks/use-auth'
 import { Navigate, Link, useNavigate, useLocation } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
@@ -7,20 +7,48 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import defaultLogoUrl from '@/assets/logotipo-negativo-01-eb1e3.png'
+import pb from '@/lib/pocketbase/client'
 
 export default function Login() {
   const { user, signIn, loading } = useAuth()
   const [email, setEmail] = useState('marcus@godoyprime.com.br')
   const [password, setPassword] = useState('Skip@Pass')
   const [isLoading, setIsLoading] = useState(false)
-  const branding = {
+  const [branding, setBranding] = useState({
     name: 'GPR - Gerador de Contratos',
     logo: defaultLogoUrl,
-  }
+  })
   const navigate = useNavigate()
   const location = useLocation()
 
   const from = location.state?.from?.pathname || '/dashboard'
+
+  useEffect(() => {
+    let mounted = true
+
+    async function fetchBranding() {
+      try {
+        // Safe handling of optional backend resources during authentication.
+        // Unauthenticated access to restricted collections returns 404 in PocketBase.
+        // We use try/catch to avoid unhandled promise rejections that crash the app.
+        const company = await pb.collection('companies').getFirstListItem('', { requestKey: null })
+        if (mounted && company) {
+          setBranding((prev) => ({
+            name: company.name || prev.name,
+            logo: prev.logo,
+          }))
+        }
+      } catch (error) {
+        // Silently ignore 404 Not Found to prevent crash, safe fallback is used instead.
+      }
+    }
+
+    fetchBranding()
+
+    return () => {
+      mounted = false
+    }
+  }, [])
 
   if (user && !loading && !isLoading) {
     return <Navigate to={from} replace />
