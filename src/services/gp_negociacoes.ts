@@ -19,11 +19,23 @@ export interface GPNegociacao extends RecordModel {
   forma_pagamento?: 'a_vista' | 'parcelado_direto' | 'financiado_sfh' | 'financiado_fiduciario'
 }
 
-export const getGPNegociacoes = () => pb.collection<GPNegociacao>('gp_negociacoes').getFullList()
-export const getGPNegociacao = (id: string) =>
-  pb.collection<GPNegociacao>('gp_negociacoes').getOne(id)
-export const createGPNegociacao = (data: Partial<GPNegociacao>) =>
-  pb.collection<GPNegociacao>('gp_negociacoes').create(data)
-export const updateGPNegociacao = (id: string, data: Partial<GPNegociacao>) =>
-  pb.collection<GPNegociacao>('gp_negociacoes').update(id, data)
-export const deleteGPNegociacao = (id: string) => pb.collection('gp_negociacoes').delete(id)
+export const getGPNegociacoes = () => {
+  if (!pb.authStore.isValid) return Promise.reject(new Error('Unauthorized'))
+  return pb.collection<GPNegociacao>('gp_negociacoes').getFullList()
+}
+export const getGPNegociacao = (id: string) => {
+  if (!pb.authStore.isValid) return Promise.reject(new Error('Unauthorized'))
+  return pb.collection<GPNegociacao>('gp_negociacoes').getOne(id)
+}
+export const createGPNegociacao = (data: Partial<GPNegociacao>) => {
+  if (!pb.authStore.isValid) return Promise.reject(new Error('Unauthorized'))
+  return pb.collection<GPNegociacao>('gp_negociacoes').create(data)
+}
+export const updateGPNegociacao = (id: string, data: Partial<GPNegociacao>) => {
+  if (!pb.authStore.isValid) return Promise.reject(new Error('Unauthorized'))
+  return pb.collection<GPNegociacao>('gp_negociacoes').update(id, data)
+}
+export const deleteGPNegociacao = (id: string) => {
+  if (!pb.authStore.isValid) return Promise.reject(new Error('Unauthorized'))
+  return pb.collection('gp_negociacoes').delete(id)
+}
