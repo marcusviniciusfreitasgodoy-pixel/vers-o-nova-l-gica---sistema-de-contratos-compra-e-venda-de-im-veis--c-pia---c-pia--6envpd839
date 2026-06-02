@@ -158,30 +158,44 @@ export default function CaseView() {
 
   const loadData = async () => {
     try {
-      const [c, pLegacy, pNew, iLegacy, iNew, negs, trans, caseContracts, checklistDocs] =
-        await Promise.all([
-          getCase(id as string, { expand: 'responsible' }),
-          getPartesByCase(id as string).catch(() => []),
-          getGPPessoasByCase(id as string).catch(() => []),
-          getImovelByCase(id as string).catch(() => null),
-          getGPImoveisByCase(id as string).catch(() => null),
-          pb
-            .collection('gp_negociacoes')
-            .getFullList({ filter: `case_id="${id}"` })
-            .catch(() => []),
-          pb
-            .collection('case_state_transitions')
-            .getFullList({ filter: `case="${id}"`, sort: '-created', expand: 'user' })
-            .catch(() => []),
-          pb
-            .collection('contracts')
-            .getFullList({ filter: `negociacao_id.case_id="${id}"` })
-            .catch(() => []),
-          pb
-            .collection('gp_doc_checklist')
-            .getFullList({ filter: `negociacao_id.case_id="${id}"` })
-            .catch(() => []),
-        ])
+      const [
+        c,
+        pLegacy,
+        pNew,
+        iLegacy,
+        iNew,
+        negs,
+        trans,
+        caseContracts,
+        checklistDocs,
+        finalDocs,
+      ] = await Promise.all([
+        getCase(id as string, { expand: 'responsible' }),
+        getPartesByCase(id as string).catch(() => []),
+        getGPPessoasByCase(id as string).catch(() => []),
+        getImovelByCase(id as string).catch(() => null),
+        getGPImoveisByCase(id as string).catch(() => null),
+        pb
+          .collection('gp_negociacoes')
+          .getFullList({ filter: `case_id="${id}"` })
+          .catch(() => []),
+        pb
+          .collection('case_state_transitions')
+          .getFullList({ filter: `case="${id}"`, sort: '-created', expand: 'user' })
+          .catch(() => []),
+        pb
+          .collection('contracts')
+          .getFullList({ filter: `negociacao_id.case_id="${id}"` })
+          .catch(() => []),
+        pb
+          .collection('gp_doc_checklist')
+          .getFullList({ filter: `negociacao_id.case_id="${id}"` })
+          .catch(() => []),
+        pb
+          .collection('gp_final_documents')
+          .getFullList({ filter: `negociacao_id.case_id="${id}"` })
+          .catch(() => []),
+      ])
 
       const mergedPartes = [
         ...pLegacy,
@@ -233,6 +247,22 @@ export default function CaseView() {
         }
       })
 
+      if (finalDocs) {
+        finalDocs.forEach((doc) => {
+          if (doc.arquivo_gerado) {
+            docsList.push({
+              id: doc.id,
+              title: `Documento Finalizado`,
+              type: 'Documento Final',
+              file: doc.arquivo_gerado,
+              collection: 'gp_final_documents',
+              record: doc,
+              status: doc.status || 'rascunho',
+            })
+          }
+        })
+      }
+
       docsList.sort(
         (a, b) => new Date(b.record.created).getTime() - new Date(a.record.created).getTime(),
       )
@@ -264,6 +294,8 @@ export default function CaseView() {
   useRealtime('gp_pessoas', () => loadData())
   useRealtime('gp_imoveis', () => loadData())
   useRealtime('imovel', () => loadData())
+  useRealtime('gp_final_documents', () => loadData())
+  useRealtime('gp_negociacoes', () => loadData())
 
   const hasSeller = partes.some((p) => p.papel_na_operacao === 'vendedor')
   const hasBuyer = partes.some((p) => p.papel_na_operacao === 'comprador')
@@ -1532,6 +1564,7 @@ export default function CaseView() {
                       <TableRow>
                         <TableHead>Nome/Tipo</TableHead>
                         <TableHead>Origem</TableHead>
+                        <TableHead>Status</TableHead>
                         <TableHead>Data</TableHead>
                         <TableHead className="text-right">Ação</TableHead>
                       </TableRow>
@@ -1543,6 +1576,18 @@ export default function CaseView() {
                             <FileText className="w-4 h-4 text-muted-foreground" /> {doc.title}
                           </TableCell>
                           <TableCell className="capitalize">{doc.type}</TableCell>
+                          <TableCell>
+                            {doc.status ? (
+                              <Badge
+                                variant={doc.status === 'assinado' ? 'default' : 'secondary'}
+                                className="capitalize"
+                              >
+                                {doc.status === 'rascunho' ? 'Pendente Assinatura' : doc.status}
+                              </Badge>
+                            ) : (
+                              '-'
+                            )}
+                          </TableCell>
                           <TableCell>
                             {format(new Date(doc.record.created), 'dd/MM/yyyy HH:mm')}
                           </TableCell>
