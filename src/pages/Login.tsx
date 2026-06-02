@@ -24,6 +24,7 @@ export default function Login() {
 
   useEffect(() => {
     async function fetchBranding() {
+      if (!pb.authStore.isValid) return
       try {
         const company = await pb
           .collection('companies')
